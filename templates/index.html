@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mood Reader – what does this sentence feel like?</title>
+  <meta name="description" content="Type a sentence and a neural network tells you which of six emotions it carries." />
+  <meta name="theme-color" content="#0b0a14" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫧</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+  <!-- ambient mood light: recolours with every prediction -->
+  <div class="mood-light" aria-hidden="true">
+    <span class="blob b1"></span>
+    <span class="blob b2"></span>
+    <span class="blob b3"></span>
+  </div>
+  <div class="grain" aria-hidden="true"></div>
+  <div id="burst" aria-hidden="true"></div>
+
+  <main class="shell">
+
+    <header class="top">
+      <span class="brand"><span class="brand-dot"></span>Mood Reader</span>
+      <span class="model-note">Bidirectional GRU, trained on 16,000 tweets</span>
+    </header>
+
+    <section class="hero">
+      <h1>How does this sentence <em>feel?</em></h1>
+      <p class="lede">Write anything. A neural network reads it and tells you whether it sounds like sadness, joy, love, anger, fear or surprise.</p>
+    </section>
+
+    <section class="stage">
+
+      <!-- INPUT -->
+      <form class="panel input-panel tilt" id="form" autocomplete="off">
+        <label for="text" class="field-label">Your sentence</label>
+        <div class="textarea-wrap">
+          <textarea id="text" name="text" rows="5" maxlength="{{ max_chars }}"
+            placeholder="I can't stop smiling since she said yes…" spellcheck="true"></textarea>
+          <span class="counter" id="counter">0 / {{ max_chars }}</span>
+        </div>
+
+        <div class="examples" role="group" aria-label="Example sentences">
+          <button type="button" class="chip" data-text="I can't believe how happy I am right now, this is amazing!">😄 Happy news</button>
+          <button type="button" class="chip" data-text="I feel so alone and hopeless today.">😢 Lonely day</button>
+          <button type="button" class="chip" data-text="I am furious that they cancelled the trip at the last minute.">😡 Cancelled trip</button>
+          <button type="button" class="chip" data-text="I feel terrified when walking down dark alleyways alone.">😨 Dark alley</button>
+          <button type="button" class="chip" data-text="I was shocked and completely surprised by the unexpected gift!">😲 Surprise gift</button>
+          <button type="button" class="chip" data-text="I adore the way you laugh, I want to stay with you forever.">😍 Soft words</button>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="cta" id="submit">
+            <span class="cta-label">Read the emotion</span>
+            <span class="cta-spinner" aria-hidden="true"></span>
+          </button>
+          <span class="shortcut"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+        </div>
+        <p class="error" id="error" role="alert" hidden></p>
+      </form>
+
+      <!-- RESULT -->
+      <section class="panel result-panel tilt" id="result" aria-live="polite">
+
+        <div class="idle" id="idle">
+          <div class="idle-orb"><span></span></div>
+          <h2>Waiting for words</h2>
+          <p>Write a sentence or pick an example. The whole page will take on its mood.</p>
+        </div>
+
+        <div class="reading" id="reading" hidden>
+          <div class="orb-wrap">
+            <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+              <defs>
+                <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" class="stop-a" />
+                  <stop offset="100%" class="stop-b" />
+                </linearGradient>
+              </defs>
+              <circle class="ring-track" cx="60" cy="60" r="52" />
+              <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52" />
+            </svg>
+            <div class="orb"><span id="emoji">😄</span></div>
+          </div>
+
+          <h2 class="emotion" id="emotion">Joy</h2>
+          <p class="blurb" id="blurb"></p>
+          <p class="confidence"><strong id="confidence">0%</strong> confident</p>
+
+          <ul class="bars" id="bars" aria-label="Probability of each emotion"></ul>
+        </div>
+      </section>
+    </section>
+
+    <section class="history" id="historyWrap" hidden>
+      <h3>Recent sentences</h3>
+      <ul id="history"></ul>
+    </section>
+
+    <footer class="foot">
+      Built with TensorFlow, Flask and the <a href="https://huggingface.co/datasets/dair-ai/emotion" target="_blank" rel="noopener">dair-ai/emotion</a> dataset.
+      Short, first-person sentences work best.
+    </footer>
+  </main>
+
+  <script>window.MAX_CHARS = {{ max_chars }};</script>
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
