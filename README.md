@@ -1,2 +1,115 @@
 # Mood Reader
 
+A Flask web app that reads a sentence and predicts which of six emotions it carries: **sadness, joy, love, anger, fear, surprise**.
+
+The model is a stacked Bidirectional GRU, trained on the [dair-ai/emotion](https://huggingface.co/datasets/dair-ai/emotion) dataset. The UI recolors the whole page to match the detected emotion.
+
+## Tech Stack
+
+- **Backend:** Python, Flask, Gunicorn
+- **Model:** TensorFlow / Keras (Bidirectional GRU)
+- **Frontend:** HTML, CSS, vanilla JavaScript
+- **Hosting:** Render (free tier)
+
+## Project Structure
+
+```
+emotion-ai/
+├── app.py                  # Flask server and prediction logic
+├── requirements.txt        # Python dependencies
+├── render.yaml             # Render deployment settings
+├── .python-version         # Python version for deployment
+├── Artifacts/              # Trained model and tokenizer
+│   ├── BiGRU_Modle.keras
+│   └── tokenizer.pkl
+├── templates/
+│   └── index.html          # Page layout
+└── static/
+    ├── css/style.css       # Styling and emotion themes
+    └── js/app.js           # Requests, animations, history
+```
+
+## Run Locally
+
+1. Put your trained files in the `Artifacts/` folder.
+2. Create and activate a virtual environment:
+
+```bash
+   python -m venv venv
+   venv\Scripts\activate          # Windows
+   source venv/bin/activate       # macOS / Linux
+```
+
+3. Install dependencies and start the app:
+
+```bash
+   pip install -r requirements.txt
+   python app.py
+```
+
+4. Open http://127.0.0.1:5000
+
+If something fails, open http://127.0.0.1:5000/health to see the exact error.
+
+## API
+
+**`POST /predict`**
+
+Request:
+
+```json
+{ "text": "I am so happy today!" }
+```
+
+Response:
+
+```json
+{
+  "emotion": "joy",
+  "confidence": 0.93,
+  "probabilities": {
+    "sadness": 0.01, "joy": 0.93, "love": 0.03,
+    "anger": 0.01, "fear": 0.01, "surprise": 0.01
+  }
+}
+```
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/` | GET | Web interface |
+| `/predict` | POST | Returns the predicted emotion (max 500 characters) |
+| `/health` | GET | Shows whether the model loaded correctly |
+
+## Deploy on Render (Free)
+
+1. Push this project to a GitHub repository, including the `Artifacts/` folder.
+2. On [render.com](https://render.com), choose **New → Web Service** and select the repo.
+3. Use these settings:
+
+   | Setting | Value |
+   |---|---|
+   | Runtime | Python 3 |
+   | Build Command | `pip install -r requirements.txt` |
+   | Start Command | `gunicorn app:app --workers 1 --threads 2 --timeout 180 --bind 0.0.0.0:$PORT` |
+   | Instance Type | Free |
+   | Environment variable | `PYTHON_VERSION` = `3.12.8` |
+
+4. Click **Create Web Service**. The first build takes about 5 to 10 minutes.
+
+Every `git push` to `main` redeploys automatically.
+
+## Troubleshooting
+
+| Problem | Likely cause |
+|---|---|
+| `/health` says "Could not find model/tokenizer" | Files are missing from `Artifacts/` or were not committed to Git |
+| Error mentioning `keras` or `deserialize` | Library versions differ from the ones used for training |
+| Build fails on TensorFlow | `PYTHON_VERSION` does not match your local Python version |
+| Deploy restarts repeatedly | Out of memory on the 512 MB free tier |
+
+## Notes
+
+- The free Render service sleeps after about 15 minutes of inactivity, so the first visit afterwards takes 30 to 60 seconds.
+- Short, first-person sentences work best, since the model was trained on tweets.
+- Library versions in `requirements.txt` must match the environment the model was trained in.
+
